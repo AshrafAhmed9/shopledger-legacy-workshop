@@ -328,6 +328,18 @@
               Record Payment Settlement
             </button>
 
+            <section id="repair-panel" class="repair-panel" hidden aria-labelledby="repair-title">
+              <h3 id="repair-title" class="sub-heading">Review Khata balance</h3>
+              <p id="repair-explanation" role="status"></p>
+              <dl id="repair-numbers" hidden>
+                <dt>Stored settled value</dt><dd id="repair-old"></dd>
+                <dt>Proposed settled total</dt><dd id="repair-new"></dd>
+                <dt>Proposed balance due</dt><dd id="repair-balance"></dd>
+                <dt>Receipts used</dt><dd id="repair-receipts"></dd>
+              </dl>
+              <button type="button" class="btn btn-primary" id="repair-apply" hidden>Apply repair</button>
+            </section>
+
             <hr class="divider">
 
             <h3 class="sub-heading">Recent Settlement Receipts</h3>

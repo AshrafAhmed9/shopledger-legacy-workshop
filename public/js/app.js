@@ -233,6 +233,7 @@ function loadCustomersDropdown() {
 
     var posSelect = document.getElementById('customer-select');
     var settleSelect = document.getElementById('settle-customer');
+    var selectedSettlement = settleSelect.value;
 
     var posOpts = '<option value="">-- Walk-in / Custom Name --</option>';
     var settleOpts = '';
@@ -245,6 +246,9 @@ function loadCustomersDropdown() {
 
     posSelect.innerHTML = posOpts;
     settleSelect.innerHTML = settleOpts;
+    if (customersList.some(function (c) { return String(c.id) === selectedSettlement; })) {
+      settleSelect.value = selectedSettlement;
+    }
 
     renderKhataTable(data.customers, data.settlements || []);
   });
@@ -332,8 +336,11 @@ function renderKhataTable(customers, settlements) {
       '<td class="r">' + fmtMoney(c.openingBalance) + '</td>' +
       '<td class="r">' + fmtMoney(c.totalBilled) + '</td>' +
       '<td class="r">' + String(c.totalSettled) + '</td>' +
-      '<td class="r"><strong style="color:' + balColor + '">' + fmtMoney(c.balance) + '</strong></td>' +
-      '<td class="r"><button type="button" class="btn btn-ghost btn-sm" onclick="prefillSettlement(' + c.id + ')">Settle</button></td>' +
+      '<td class="r"><strong style="color:' + balColor + '">' + fmtMoney(c.balance) + '</strong>' +
+      (c.needsReconciliation ? '<div><span class="status-pill pending">Needs reconciliation</span></div>' : '') + '</td>' +
+      '<td class="r"><button type="button" class="btn btn-ghost btn-sm" onclick="' +
+      (c.needsReconciliation ? 'showKhataRepair(' + Number(c.id) + ')">Review balance' : 'prefillSettlement(' + Number(c.id) + ')">Settle') +
+      '</button></td>' +
       '</tr>';
   }
   document.querySelector('#customers-table tbody').innerHTML = html;
@@ -351,8 +358,60 @@ function renderKhataTable(customers, settlements) {
 
 window.prefillSettlement = function (customerId) {
   document.getElementById('settle-customer').value = String(customerId);
+  document.getElementById('repair-panel').hidden = true;
   document.getElementById('settle-amount').focus();
 };
+
+window.showKhataRepair = function (customerId) {
+  var selection = document.getElementById('settle-customer');
+  var panel = document.getElementById('repair-panel');
+  var summary = document.getElementById('repair-explanation');
+  var numbers = document.getElementById('repair-numbers');
+  var apply = document.getElementById('repair-apply');
+  var url = '/api/customers/' + customerId;
+  selection.value = String(customerId);
+  panel.hidden = false;
+  numbers.hidden = true;
+  apply.hidden = true;
+  summary.textContent = 'Checking the saved balance and receipts…';
+  get(url + '/repair-preview', function (result, status) {
+    if (selection.value !== String(customerId) || panel.hidden) return;
+    if (status !== 200 || !result) {
+      summary.textContent = 'Could not load a repair preview.';
+      return;
+    }
+    summary.textContent = result.reason;
+    if (result.status !== 'repairable') return;
+    document.getElementById('repair-old').textContent = String(result.oldSettled);
+    document.getElementById('repair-new').textContent = fmtMoney(result.proposedSettled);
+    document.getElementById('repair-balance').textContent = fmtMoney(result.proposedBalance);
+    document.getElementById('repair-receipts').textContent = result.receiptIds.map(function (id) {
+      return '#' + id;
+    }).join(', ');
+    numbers.hidden = false;
+    apply.hidden = false;
+    apply.disabled = false;
+    apply.onclick = function () {
+      apply.disabled = true;
+      post(url + '/repair', { expectedOldSettled: result.oldSettled }, function (status, response) {
+        if (selection.value !== String(customerId) || panel.hidden) return;
+        if (status !== 200) {
+          summary.textContent = response.error || 'Could not apply the repair.';
+          return;
+        }
+        summary.textContent = 'Balance due after repair: ' + fmtMoney(response.balance);
+        numbers.hidden = true;
+        apply.hidden = true;
+        loadCustomersDropdown();
+        loadDashboardSummary();
+      });
+    };
+  });
+};
+
+document.getElementById('settle-customer').addEventListener('change', function () {
+  document.getElementById('repair-panel').hidden = true;
+});
 
 function renderInventoryAuditTable() {
   var html = '';
