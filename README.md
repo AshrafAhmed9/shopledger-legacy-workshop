@@ -1,6 +1,6 @@
 # ShopLedger
 
-ShopLedger is a small point-of-sale app for invoices, inventory, and customer credit (Khata).
+ShopLedger is a point-of-sale app for invoices, inventory, and customer credit (Khata). It repairs a damaged balance when the receipts support a unique correction. In the demo, a recorded ₹500 payment is recovered to a verified balance of ₹732.01 due.
 
 Hosted demo URL pending. Run the same resettable demo locally with the commands below.
 
