@@ -1,0 +1,129 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1160" height="905" viewBox="0 0 1160 905" role="img" aria-labelledby="title description">
+  <title id="title">ShopLedger architecture and order placement</title>
+  <desc id="description">The browser sends POST /api/orders through server.js to routes/orders.js. The router reads the JSON store, checks stock, validates the coupon and calculates totals, charges Khata when selected, deducts stock, adds the order, appends an audit entry, writes the store, and returns the order with HTTP 201. The right column lists the other routers, the separate invoice endpoint, and shared files.</desc>
+
+  <defs>
+    <marker id="arrowhead" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L8 4 L0 8 Z" fill="#087569"/>
+    </marker>
+    <style>
+      text { font-family: Arial, Helvetica, sans-serif; fill: #172c34; }
+      .title { font-size: 36px; font-weight: 700; }
+      .heading { font-size: 21px; font-weight: 700; }
+      .name { font-size: 17px; font-weight: 700; }
+      .detail { font-size: 16px; fill: #344b54; }
+      .code { font-family: Menlo, Consolas, "Liberation Mono", monospace; font-size: 15px; }
+      .accent { fill: #07695f; }
+      .entry { fill: #edf8f5; stroke: #73a69d; stroke-width: 1.5; }
+      .panel { fill: #f4f7f8; stroke: #b9c9ce; }
+      .step { fill: #fff; stroke: #afc8c4; }
+      .rule { stroke: #b9c9ce; }
+      .flow { fill: none; stroke: #087569; stroke-width: 2; marker-end: url(#arrowhead); }
+    </style>
+  </defs>
+
+  <rect width="1160" height="905" fill="#fff"/>
+
+  <text class="title" x="36" y="57">ShopLedger architecture</text>
+
+  <g aria-label="Browser request and Express routing">
+    <rect class="entry" x="36" y="87" width="319" height="105" rx="5"/>
+    <text class="heading" x="54" y="115">Browser UI</text>
+    <text class="code" x="54" y="139">public/index.html</text>
+    <text class="code" x="54" y="158">public/css/style.css</text>
+    <text class="code" x="54" y="177">public/js/app.js</text>
+
+    <path class="flow" d="M355 140 H409"/>
+    <rect class="entry" x="411" y="87" width="295" height="105" rx="5"/>
+    <text class="heading" x="429" y="115">server.js</text>
+    <text class="detail" x="429" y="140">Serves the UI and parses JSON</text>
+    <text class="detail" x="429" y="165">Mounts the four routers at /api</text>
+
+    <path class="flow" d="M706 140 H760"/>
+    <rect class="entry" x="762" y="87" width="362" height="105" rx="5"/>
+    <text class="heading" x="780" y="115">routes/orders.js</text>
+    <text class="code accent" x="780" y="140">POST /api/orders</text>
+    <text class="detail" x="780" y="165">Also lists, retrieves and cancels orders</text>
+  </g>
+
+  <g aria-label="Order placement sequence">
+    <rect class="panel" x="36" y="238" width="642" height="631" rx="6"/>
+    <text class="heading" x="54" y="266">Place an order</text>
+    <path class="flow" d="M943 192 V216 H357 V279"/>
+
+    <rect class="step" x="54" y="281" width="606" height="61" rx="4"/>
+    <text class="name" x="72" y="305">Read the current data</text>
+    <text class="detail" x="72" y="328"><tspan class="code">lib/store.js</tspan> reads <tspan class="code">data/db.json</tspan> before the router validates the cart.</text>
+
+    <path class="flow" d="M357 342 V357"/>
+    <rect class="step" x="54" y="359" width="606" height="61" rx="4"/>
+    <text class="name" x="72" y="383">Resolve items and check sellable stock</text>
+    <text class="detail" x="72" y="406"><tspan class="code">lib/inventory.js</tspan> finds products and checks available quantities.</text>
+
+    <path class="flow" d="M357 420 V435"/>
+    <rect class="step" x="54" y="437" width="606" height="81" rx="4"/>
+    <text class="name" x="72" y="461">Calculate subtotal, validate coupon, then compute totals</text>
+    <text class="detail" x="72" y="484">The router calls <tspan class="code">lib/coupons.js</tspan> to validate a supplied code.</text>
+    <text class="detail" x="72" y="505"><tspan class="code">lib/pricing.js</tspan> calls <tspan class="code">lib/coupons.js</tspan> and <tspan class="code">lib/tax.js</tspan> for totals.</text>
+
+    <path class="flow" d="M357 518 V533"/>
+    <rect class="step" x="54" y="535" width="606" height="81" rx="4"/>
+    <text class="name" x="72" y="559">Resolve the customer and charge Khata if selected</text>
+    <text class="detail" x="72" y="582"><tspan class="code">lib/ledger.js</tspan> looks up a selected customer and, for Khata payments,</text>
+    <text class="detail" x="72" y="603">checks the credit limit before adding the order total to the balance.</text>
+
+    <path class="flow" d="M357 616 V631"/>
+    <rect class="step" x="54" y="633" width="606" height="81" rx="4"/>
+    <text class="name" x="72" y="657">Deduct stock and add the order</text>
+    <text class="detail" x="72" y="680"><tspan class="code">lib/inventory.js</tspan> deducts physical stock.</text>
+    <text class="detail" x="72" y="701"><tspan class="code">lib/orders.js</tspan> assigns an order ID and gets the date from <tspan class="code">lib/dates.js</tspan>.</text>
+
+    <path class="flow" d="M357 714 V729"/>
+    <rect class="step" x="54" y="731" width="606" height="61" rx="4"/>
+    <text class="name" x="72" y="755">Log the order and save</text>
+    <text class="detail" x="72" y="778"><tspan class="code">lib/store.js</tspan> appends <tspan class="code">ORDER_CREATED</tspan> and writes <tspan class="code">data/db.json</tspan>.</text>
+
+    <path class="flow" d="M357 792 V807"/>
+    <rect class="entry" x="54" y="809" width="606" height="44" rx="4"/>
+    <text class="detail" x="72" y="837"><tspan class="code accent" font-weight="bold">201 Created</tspan> · The browser shows the order ID and ledger total.</text>
+  </g>
+
+  <g aria-label="Other API routers">
+    <rect class="panel" x="706" y="238" width="418" height="283" rx="6"/>
+    <text class="heading" x="724" y="266">Other /api routers</text>
+
+    <text class="code" font-weight="bold" x="724" y="300">routes/products.js</text>
+    <text class="detail" x="724" y="323">Products and active coupons</text>
+    <path class="rule" d="M724 339 H1106"/>
+
+    <text class="code" font-weight="bold" x="724" y="365">routes/customers.js</text>
+    <text class="detail" x="724" y="388">Customer balances and Khata settlements</text>
+    <text class="detail" x="724" y="409">via <tspan class="code">lib/ledger.js</tspan></text>
+    <path class="rule" d="M724 425 H1106"/>
+
+    <text class="code" font-weight="bold" x="724" y="451">routes/reports.js</text>
+    <text class="detail" x="724" y="474"><tspan class="code">lib/reports.js</tspan> · Dashboard and GST reconciliation</text>
+    <text class="detail" x="724" y="497">Cart pricing preview and admin data export</text>
+  </g>
+
+  <g aria-label="Printable invoice endpoint">
+    <rect class="panel" x="706" y="539" width="418" height="125" rx="6"/>
+    <text class="heading" x="724" y="567">Printable invoice</text>
+    <text class="code" x="724" y="594">GET /orders/:id/invoice</text>
+    <text class="detail" x="724" y="620"><tspan class="code">server.js</tspan> reads the store and gets the order.</text>
+    <text class="detail" x="724" y="643"><tspan class="code">lib/invoice.js</tspan> renders the HTML invoice.</text>
+  </g>
+
+  <g aria-label="Configuration and data files">
+    <rect class="panel" x="706" y="682" width="418" height="187" rx="6"/>
+    <text class="heading" x="724" y="710">Configuration and data</text>
+
+    <text class="code" font-weight="bold" x="724" y="740">config.js</text>
+    <text class="detail" x="724" y="763">Port, shop details, GST, reorder level and coupons</text>
+    <path class="rule" d="M724 779 H1106"/>
+
+    <text class="code" font-weight="bold" x="724" y="806">data/db.json</text>
+    <text class="detail" x="724" y="829">Products, orders, customers, settlements, audit log</text>
+    <text class="detail" x="724" y="851"><tspan class="code">lib/store.js</tspan> reads and writes the file.</text>
+  </g>
+</svg>

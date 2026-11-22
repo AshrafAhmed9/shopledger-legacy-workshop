@@ -17,12 +17,12 @@ function fixture() {
   };
 }
 
-test('CURRENT BEHAVIOUR: a string payment concatenates the settled total', () => {
+test('adds a string payment to the numeric settled total', () => {
   const db = fixture();
   const result = ledger.recordSettlement(db, 1, '500', 'cash', 'Counter receipt');
   assert.equal(result.ok, true);
-  assert.equal(result.customer.totalSettled, '1200500');
-  assert.equal(result.customer.balance, -1198067.99);
+  assert.equal(result.customer.totalSettled, 1700);
+  assert.equal(result.customer.balance, 732.01);
   assert.equal(result.settlement.amount, 500);
 });
 
@@ -54,4 +54,40 @@ test('unknown customer creates no receipt', () => {
   const before = structuredClone(db);
   assert.equal(ledger.recordSettlement(db, 999, '500').ok, false);
   assert.deepEqual(db, before);
+});
+
+test('accepts subsequent paise payments', () => {
+  const db = fixture();
+  assert.equal(ledger.recordSettlement(db, 1, '0.10').ok, true);
+  const result = ledger.recordSettlement(db, 1, '0.20');
+  assert.equal(result.customer.totalSettled, 1200.30);
+  assert.equal(result.customer.balance, 1231.71);
+  assert.deepEqual(db.settlements.map(receipt => receipt.amount), [0.20, 0.10]);
+});
+
+test('rejects malformed or non-finite amounts before any mutation', () => {
+  for (const amount of ['abc', 'Infinity', '1e309', '1e308', '0x1F4', '1e3', '1.234', 1.234, Infinity, true, [500], {}]) {
+    const db = fixture();
+    const before = structuredClone(db);
+    assert.equal(ledger.recordSettlement(db, 1, amount).ok, false);
+    assert.deepEqual(db, before);
+  }
+});
+
+test('requires reconciliation before writing to a suspect stored ledger', () => {
+  const cases = [
+    { totalSettled: '1200500', balance: -1198067.99 },
+    { totalSettled: '1200' },
+    { totalSettled: undefined },
+    { balance: 100 }
+  ];
+  for (const changes of cases) {
+    const db = fixture();
+    Object.assign(db.customers[0], changes);
+    const before = structuredClone(db);
+    const result = ledger.recordSettlement(db, 1, '100');
+    assert.equal(result.ok, false);
+    assert.match(result.error, /needs reconciliation/);
+    assert.deepEqual(db, before);
+  }
 });

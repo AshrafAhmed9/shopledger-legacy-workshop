@@ -3,20 +3,24 @@ var store = require('../lib/store');
 var inventory = require('../lib/inventory');
 var pricing = require('../lib/pricing');
 var coupons = require('../lib/coupons');
+var dates = require('../lib/dates');
 var orders = require('../lib/orders');
 var ledger = require('../lib/ledger');
 
 var router = express.Router();
 
 router.get('/orders', function (req, res) {
-  var db = store.read();
   var filters = {
     status: req.query.status || 'all',
     search: req.query.search || '',
     from: req.query.from || '',
     to: req.query.to || ''
   };
-  res.json(orders.list(db, filters));
+  if ((filters.from && !dates.toCalendarKey(filters.from)) ||
+      (filters.to && !dates.toCalendarKey(filters.to))) {
+    return res.status(400).json({ error: 'Use a valid date for both history filters' });
+  }
+  res.json(orders.list(store.read(), filters));
 });
 
 router.get('/orders/:id', function (req, res) {
