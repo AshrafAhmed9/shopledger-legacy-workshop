@@ -762,6 +762,27 @@ body {
   margin: 0 0 10px 0;
 }
 
+.repair-panel {
+  margin-top: 16px;
+  padding: 14px;
+  background: #fffaf0;
+  border: 1px solid #e8d6ac;
+  border-radius: 8px;
+}
+
+.repair-panel dl:not([hidden]) {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+}
+
+.repair-panel dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
 .settlements-feed {
   display: flex;
   flex-direction: column;
