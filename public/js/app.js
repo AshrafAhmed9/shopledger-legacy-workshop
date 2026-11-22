@@ -632,6 +632,18 @@ document.getElementById('btn-record-settlement').onclick = function () {
 };
 
 // Initial boot
+get('/api/demo', function (data) {
+  if (!data || !data.enabled) return;
+  var reset = document.getElementById('reset-demo');
+  reset.hidden = false;
+  reset.onclick = function () {
+    reset.disabled = true;
+    post('/api/demo/reset', {}, function (status) {
+      if (status === 200) window.location.reload();
+      else reset.disabled = false;
+    });
+  };
+});
 loadProducts();
 loadCustomersDropdown();
 loadDashboardSummary();
